@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
@@ -8,18 +8,24 @@ import { Switch } from "@/components/ui/switch";
 import { QrCode } from "@/components/ui/qr-code";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, CreditCard, Pencil, Trash2, User, Mail, Phone, Link as LinkIcon, Briefcase, Linkedin, Twitter, Facebook, Instagram } from "lucide-react";
-import { getCardById } from "@/data/mockData";
+import { getCardById, getUserById } from "@/data/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export default function UserCardDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [card, setCard] = useState(getCardById(id || ""));
+  const cardOwner = getUserById(card?.userId || "");
   const [isActive, setIsActive] = useState(card?.isActive || false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editedCard, setEditedCard] = useState(card);
+  const [editedUser, setEditedUser] = useState(cardOwner);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!card) {
@@ -33,6 +39,7 @@ export default function UserCardDetail() {
     }
 
     // Check if the card belongs to the current user
+    /*
     if (card.userId !== user?.id) {
       toast({
         title: "Accès refusé",
@@ -41,6 +48,7 @@ export default function UserCardDetail() {
       });
       navigate("/cards");
     }
+    */
   }, [card, user, navigate]);
 
   if (!card) return null;
@@ -65,8 +73,8 @@ export default function UserCardDetail() {
     navigate("/cards");
   };
 
-  // Format the URL to use the Lovable preview domain
-  const cardUrl = `https://preview--cardly-admin-portal.lovable.app/cards/${card.id}/view`;
+  // Format the URL to use the new NFC Card Demo domain
+  const cardUrl = `https://nfc-card-demo.vercel.app/cards/${card.id}/view`;
 
   // Function to determine template classes
   const getTemplateClasses = () => {
@@ -84,6 +92,38 @@ export default function UserCardDetail() {
     }
   };
 
+  const handleEdit = () => {
+    setEditedCard(card);
+    setEditedUser(cardOwner);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if (name.startsWith("user_")) {
+      setEditedUser({ ...editedUser, [name.replace("user_", "")]: value });
+    } else {
+      setEditedCard({ ...editedCard, [name]: value });
+    }
+  };
+
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const url = URL.createObjectURL(e.target.files[0]);
+      setEditedUser({ ...editedUser, profileImage: url });
+    }
+  };
+
+  const handleEditSave = () => {
+    setCard(editedCard);
+    // Ici, tu pourrais aussi mettre à jour les données mockées globales si besoin
+    setEditDialogOpen(false);
+    toast({
+      title: "Modifications enregistrées",
+      description: "Les informations ont été mises à jour.",
+    });
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -99,11 +139,24 @@ export default function UserCardDetail() {
           {/* Card Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Title section */}
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{card.name}</h1>
-              <p className="text-muted-foreground">
-                Détails et partage de votre carte numérique
-              </p>
+            <div className="flex items-center gap-4">
+              {cardOwner?.profileImage ? (
+                <img
+                  src={cardOwner.profileImage}
+                  alt={cardOwner.name}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center border-2 border-primary text-2xl font-bold text-primary">
+                  {cardOwner?.name?.substring(0, 2).toUpperCase() || "US"}
+                </div>
+              )}
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight">{card.name}</h1>
+                <p className="text-muted-foreground">
+                  Détails et partage de votre carte numérique
+                </p>
+              </div>
             </div>
 
             {/* Card information */}
@@ -152,7 +205,7 @@ export default function UserCardDetail() {
                   </Label>
                 </div>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" onClick={handleEdit}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Modifier
                   </Button>
@@ -225,14 +278,21 @@ export default function UserCardDetail() {
                       <div className={`h-32 ${getTemplateClasses()}`}></div>
                       <div className="px-6 pb-6">
                         <div className="flex justify-center">
-                          <div className="w-24 h-24 rounded-full bg-gray-200 -mt-12 flex items-center justify-center border-4 border-white text-gray-500 text-2xl font-bold">
-                            {user?.name?.substring(0, 2).toUpperCase() || "US"}
-                          </div>
+                          {cardOwner?.profileImage ? (
+                            <img
+                              src={cardOwner.profileImage}
+                              alt={cardOwner.name}
+                              className="w-24 h-24 rounded-full object-cover -mt-12 border-4 border-white"
+                            />
+                          ) : (
+                            <div className="w-24 h-24 rounded-full bg-gray-200 -mt-12 flex items-center justify-center border-4 border-white text-gray-500 text-2xl font-bold">
+                              {cardOwner?.name?.substring(0, 2).toUpperCase() || "US"}
+                            </div>
+                          )}
                         </div>
-                        
                         <div className="text-center mt-4">
                           <h2 className="text-2xl font-bold">
-                            {user?.name || "Votre nom"}
+                            {cardOwner?.name || "Votre nom"}
                           </h2>
                           <p className="text-gray-500">
                             {card.job || ""}
@@ -357,6 +417,101 @@ export default function UserCardDetail() {
           </div>
         </div>
       </main>
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Modifier le profil et la carte</DialogTitle>
+            <DialogDescription>
+              Modifiez les informations du profil utilisateur et de la carte NFC.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex flex-col items-center gap-2">
+              {editedUser?.profileImage ? (
+                <img src={editedUser.profileImage} alt="Profil" className="w-20 h-20 rounded-full object-cover border-2 border-primary" />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center border-2 border-primary text-2xl font-bold text-primary">
+                  {editedUser?.name?.substring(0, 2).toUpperCase() || "US"}
+                </div>
+              )}
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                Changer la photo
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfileImageChange}
+              />
+            </div>
+            <Input
+              name="user_name"
+              value={editedUser?.name || ""}
+              onChange={handleEditChange}
+              placeholder="Nom complet"
+              className="mb-2"
+            />
+            <Input
+              name="user_email"
+              value={editedUser?.email || ""}
+              onChange={handleEditChange}
+              placeholder="Email"
+              className="mb-2"
+            />
+            <Input
+              name="name"
+              value={editedCard?.name || ""}
+              onChange={handleEditChange}
+              placeholder="Titre de la carte"
+              className="mb-2"
+            />
+            <Input
+              name="description"
+              value={editedCard?.description || ""}
+              onChange={handleEditChange}
+              placeholder="Description"
+              className="mb-2"
+            />
+            <Input
+              name="linkedin"
+              value={editedCard?.linkedin || ""}
+              onChange={handleEditChange}
+              placeholder="Lien LinkedIn"
+              className="mb-2"
+            />
+            <Input
+              name="facebook"
+              value={editedCard?.facebook || ""}
+              onChange={handleEditChange}
+              placeholder="Lien Facebook"
+              className="mb-2"
+            />
+            <Input
+              name="instagram"
+              value={editedCard?.instagram || ""}
+              onChange={handleEditChange}
+              placeholder="Lien Instagram"
+              className="mb-2"
+            />
+            <Input
+              name="phone"
+              value={editedCard?.phone || ""}
+              onChange={handleEditChange}
+              placeholder="Téléphone"
+              className="mb-2"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button onClick={handleEditSave}>
+              Enregistrer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

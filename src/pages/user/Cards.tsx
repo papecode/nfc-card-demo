@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
@@ -6,16 +5,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserCards } from "@/data/mockData";
+import { mockNfcCards } from "@/data/mockData";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, QrCode, Search, Share } from "lucide-react";
 
 export default function UserCards() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const userCards = getUserCards(user?.id || "");
-  
-  const filteredCards = userCards.filter(card => 
+  const networkingCards = mockNfcCards.filter(card => card.name === "Carte Networking");
+  const filteredCards = networkingCards.filter(card =>
     card.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     card.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -52,7 +50,7 @@ export default function UserCards() {
               />
             </div>
             <div className="flex-1 text-sm text-muted-foreground">
-              {filteredCards.length} carte{filteredCards.length !== 1 ? "s" : ""} trouvée{filteredCards.length !== 1 ? "s" : ""}
+              {filteredCards.length} carte{filteredCards.length !== 1 ? "s" : ""} Networking trouvée{filteredCards.length !== 1 ? "s" : ""}
             </div>
           </div>
 
@@ -100,7 +98,7 @@ export default function UserCards() {
               <div className="col-span-full flex flex-col items-center justify-center rounded-md border border-dashed p-8">
                 <CreditCard className="h-10 w-10 text-muted-foreground" />
                 <h3 className="mt-4 text-xl font-semibold">Aucune carte trouvée</h3>
-                {userCards.length === 0 ? (
+                {networkingCards.length === 0 ? (
                   <>
                     <p className="mb-4 text-sm text-muted-foreground text-center">
                       Vous n'avez pas encore créé de carte NFC.
