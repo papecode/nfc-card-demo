@@ -1,16 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getCardById } from "@/data/mockData";
+import { getCardById, getUserById } from "@/data/mockData";
 import { Mail, Phone, Link as LinkIcon, Briefcase, Linkedin, Twitter, Facebook, Instagram, UserPlus, Share, ExternalLink } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 export default function PublicCardView() {
   const { id } = useParams<{ id: string }>();
   const [card, setCard] = useState<any>(null);
+  const [cardOwner, setCardOwner] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,6 +19,9 @@ export default function PublicCardView() {
       try {
         const cardData = getCardById(id || "");
         setCard(cardData);
+        if (cardData) {
+          setCardOwner(getUserById(cardData.userId));
+        }
       } catch (error) {
         console.error("Error fetching card:", error);
       } finally {
@@ -165,14 +168,22 @@ export default function PublicCardView() {
             {/* Profile Section */}
             <div className="p-6 sm:p-8">
               <div className="flex flex-col items-center mb-6">
-                <Avatar className="w-32 h-32 border-4 border-white shadow-sm">
-                  <AvatarFallback className="text-4xl bg-primary/20 text-primary">
-                    {card.userName?.substring(0, 2).toUpperCase() || "US"}
-                  </AvatarFallback>
-                </Avatar>
+                {cardOwner?.profileImage ? (
+                  <img
+                    src={cardOwner.profileImage}
+                    alt={cardOwner.name}
+                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-sm"
+                  />
+                ) : (
+                  <Avatar className="w-32 h-32 border-4 border-white shadow-sm">
+                    <AvatarFallback className="text-4xl bg-primary/20 text-primary">
+                      {cardOwner?.name?.substring(0, 2).toUpperCase() || "US"}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
                 
                 <div className="mt-4 text-center">
-                  <h1 className="text-3xl font-bold mb-1">{card.userName || "Nom utilisateur"}</h1>
+                  <h1 className="text-3xl font-bold mb-1">{cardOwner?.name || "Nom utilisateur"}</h1>
                   <p className="text-gray-500 text-xl">{card.job || ""}</p>
                   {card.company && (
                     <div className="flex items-center justify-center mt-2">
@@ -185,18 +196,18 @@ export default function PublicCardView() {
 
               {/* Contact Info */}
               <div className="space-y-4 mt-8">
-                {card.email && (
-                  <a href={`mailto:${card.email}`} className="flex items-center p-3 hover:bg-gray-50 rounded-md border">
+                {cardOwner?.email && (
+                  <a href={`mailto:${cardOwner.email}`} className="flex items-center p-3 hover:bg-gray-50 rounded-md border">
                     <Mail className="h-5 w-5 mr-4 text-primary" />
-                    <span className="flex-1">{card.email}</span>
+                    <span className="flex-1">{cardOwner.email}</span>
                     <ExternalLink className="h-4 w-4 text-gray-400" />
                   </a>
                 )}
                 
-                {card.phone && (
-                  <a href={`tel:${card.phone}`} className="flex items-center p-3 hover:bg-gray-50 rounded-md border">
+                {cardOwner?.phone && (
+                  <a href={`tel:${cardOwner.phone}`} className="flex items-center p-3 hover:bg-gray-50 rounded-md border">
                     <Phone className="h-5 w-5 mr-4 text-primary" />
-                    <span className="flex-1">{card.phone}</span>
+                    <span className="flex-1">{cardOwner.phone}</span>
                     <ExternalLink className="h-4 w-4 text-gray-400" />
                   </a>
                 )}

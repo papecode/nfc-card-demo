@@ -148,7 +148,7 @@ export default function Header() {
             </span>
           </div>
           <span className="hidden text-lg font-bold sm:inline-block">
-            NFC Card Manager
+            YeyCard
           </span>
         </Link>
 
